@@ -6,6 +6,7 @@ INCS	 =
 VERSION ?= 0.0.3
 NAME     = mempool
 BUILDROOT ?= $(CURDIR)/build
+MAINTAINER ?= Unknown <unknown@example.com>
 
 ifeq ($(OS),Darwin)
 	LIB_EXT      = dylib
@@ -63,20 +64,21 @@ srpm: dist
 	@rpmbuild --define "_topdir $(RPMTOP)" -bs mempool.spec
 
 DEBROOT := $(BUILDROOT)/deb
+ARCH ?= $(shell dpkg-architecture -qDEB_BUILD_ARCH 2>/dev/null || uname -m)
 deb: all
-	@mkdir -p $(DEBROOT)/$(NAME)_$(VERSION)_amd64/DEBIAN
-	@mkdir -p $(DEBROOT)/$(NAME)_$(VERSION)_amd64/usr/local/lib
-	@mkdir -p $(DEBROOT)/$(NAME)_$(VERSION)_amd64/usr/local/include
-	@cp $(LIBRARY) $(DEBROOT)/$(NAME)_$(VERSION)_amd64/usr/local/lib/
-	@cp libmempool.h $(DEBROOT)/$(NAME)_$(VERSION)_amd64/usr/local/include/
-	@printf "Package: $(NAME)\nVersion: $(VERSION)\nSection: libs\nPriority: optional\nArchitecture: amd64\nMaintainer: Unknown <unknown@example.com>\nDescription: Minimal memory pool allocator\n" > $(DEBROOT)/$(NAME)_$(VERSION)_amd64/DEBIAN/control
-	@dpkg-deb --build $(DEBROOT)/$(NAME)_$(VERSION)_amd64
+	@mkdir -p $(DEBROOT)/$(NAME)_$(VERSION)_$(ARCH)/DEBIAN
+	@mkdir -p $(DEBROOT)/$(NAME)_$(VERSION)_$(ARCH)/usr/local/lib
+	@mkdir -p $(DEBROOT)/$(NAME)_$(VERSION)_$(ARCH)/usr/local/include
+	@cp $(LIBRARY) $(DEBROOT)/$(NAME)_$(VERSION)_$(ARCH)/usr/local/lib/
+	@cp libmempool.h $(DEBROOT)/$(NAME)_$(VERSION)_$(ARCH)/usr/local/include/
+	@printf "Package: $(NAME)\nVersion: $(VERSION)\nSection: libs\nPriority: optional\nArchitecture: $(ARCH)\nMaintainer: $(MAINTAINER)\nDescription: Minimal memory pool allocator\n" > $(DEBROOT)/$(NAME)_$(VERSION)_$(ARCH)/DEBIAN/control
+	@dpkg-deb --build $(DEBROOT)/$(NAME)_$(VERSION)_$(ARCH)
 
 sdeb: dist
 	@mkdir -p $(DEBROOT)/$(NAME)_$(VERSION)_source/DEBIAN
 	@mkdir -p $(DEBROOT)/$(NAME)_$(VERSION)_source/usr/src/$(NAME)-$(VERSION)
 	@tar -xf $(TARBALL) -C $(DEBROOT)/$(NAME)_$(VERSION)_source/usr/src/
-	@printf "Package: $(NAME)-source\nVersion: $(VERSION)\nSection: libs\nPriority: optional\nArchitecture: all\nMaintainer: Unknown <unknown@example.com>\nDescription: Source package for minimal memory pool allocator\n" > $(DEBROOT)/$(NAME)_$(VERSION)_source/DEBIAN/control
+	@printf "Package: $(NAME)-source\nVersion: $(VERSION)\nSection: libs\nPriority: optional\nArchitecture: all\nMaintainer: $(MAINTAINER)\nDescription: Source package for minimal memory pool allocator\n" > $(DEBROOT)/$(NAME)_$(VERSION)_source/DEBIAN/control
 	@dpkg-deb --build $(DEBROOT)/$(NAME)_$(VERSION)_source
 
 clean:

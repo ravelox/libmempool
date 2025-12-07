@@ -5,6 +5,7 @@ Summary:        Minimal memory pool allocator
 
 License:        MIT
 URL:            https://example.com/mempool
+Packager:       %{?_maintainer}
 Source0:        %{name}-%{version}.tar.gz
 
 BuildRequires:  gcc, make
