@@ -7,7 +7,7 @@ Release:        1%{?dist}
 Summary:        Minimal memory pool allocator
 
 License:        GPL-3.0-or-later
-URL:            https://example.com/mempool
+URL:            https://github.com/ravelox/libmempool
 Packager:       %{?_maintainer}
 Source0:        %{name}-%{version}.tar.gz
 
