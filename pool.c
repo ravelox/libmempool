@@ -450,4 +450,20 @@ pool_dump(MemoryPool *pool)
 	LOGF("Used block chain:\n");
 	pool_dump_block(pool->used_blocks);
 	fprintf(stderr, "-----------\n");
+
+	/* Dump the raw pool in 64-character lines */
+	if(pool->allocated && pool->size)
+	{
+		size_t offset = 0;
+		char *mem = (char *)pool->allocated;
+		while(offset < pool->size)
+		{
+			size_t chunk = pool->size - offset;
+			if(chunk > 64) chunk = 64;
+			fwrite(mem + offset, 1, chunk, stderr);
+			fputc('\n', stderr);
+			offset += chunk;
+		}
+		fprintf(stderr, "-----------\n");
+	}
 }
