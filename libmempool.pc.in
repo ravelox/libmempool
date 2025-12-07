@@ -1,0 +1,13 @@
+## Copyright (c) 2024 Dave Kelly <github@ravelox.co.uk>
+## Licensed under the GNU General Public License v3.0 or later.
+
+prefix=/usr/local
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: libmempool
+Description: Minimal memory pool allocator
+Version: @VERSION@
+Libs: -L${libdir} -lmempool
+Cflags: -I${includedir}

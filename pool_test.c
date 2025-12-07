@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2024 Dave Kelly <github@ravelox.co.uk>
+ * Licensed under the GNU General Public License v3.0 or later.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

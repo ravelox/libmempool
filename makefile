@@ -1,3 +1,6 @@
+# Copyright (c) 2024 Dave Kelly <github@ravelox.co.uk>
+# Licensed under the GNU General Public License v3.0 or later.
+
 CC      ?= gcc
 OS       = $(shell uname)
 CCOPTS	 = -g -fPIC
@@ -41,13 +44,19 @@ install: $(LIBRARY)
 	install -d $(DESTDIR)/usr/local/lib $(DESTDIR)/usr/local/include
 	install -m 0755 $(LIBRARY) $(DESTDIR)/usr/local/lib/$(LIBRARY)
 	install -m 0644 libmempool.h $(DESTDIR)/usr/local/include/libmempool.h
+	sed "s/@VERSION@/$(VERSION)/" libmempool.pc.in > $(DESTDIR)/usr/local/lib/pkgconfig/libmempool.pc
 
 DIST_DIR := $(BUILDROOT)/dist
 TARBALL := $(DIST_DIR)/$(NAME)-$(VERSION).tar.gz
 
 dist:
 	@mkdir -p $(DIST_DIR)
-	@git archive --format=tar.gz --output=$(TARBALL) --prefix=$(NAME)-$(VERSION)/ HEAD
+	@tmpdir=$$(mktemp -d); \
+	cp -r * $$tmpdir; \
+	sed "s/@VERSION@/$(VERSION)/" libmempool.pc.in > $$tmpdir/libmempool.pc; \
+	( cd $$tmpdir && git init -q && git add . && git commit -qm temp ); \
+	git -C $$tmpdir archive --format=tar.gz --output=$(TARBALL) --prefix=$(NAME)-$(VERSION)/ HEAD; \
+	rm -rf $$tmpdir
 	@echo "Created $(TARBALL)"
 
 RPMTOP := $(BUILDROOT)/rpmbuild
