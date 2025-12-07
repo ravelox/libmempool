@@ -21,6 +21,7 @@ Minimal memory pool allocator built as a shared library with a small test driver
 %setup -q
 
 %build
+sed "s/@VERSION@/%{version}/" libmempool.pc.in > libmempool.pc
 make all
 
 %install

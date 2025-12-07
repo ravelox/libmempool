@@ -29,7 +29,7 @@ A minimal memory pool allocator with separate free/used block lists and a small 
 - Library version string: `pool_version()` currently returns `0.0.3`.
 
 ## Packaging
-- Shared library build produces `libmempool.{so|dylib}` and installs `libmempool.h`.
-- `make rpm` / `make srpm` require `rpmbuild` and produce RPM/SRPM into `build/rpmbuild`.
-- `make deb` produces a binary `.deb`; `make sdeb` produces a source `.deb`; requires `dpkg-deb`.
+- Shared library build produces `libmempool.{so|dylib}`, installs `libmempool.h`, and now installs `libmempool.pc` into `$(prefix)/lib/pkgconfig` via `make install`.
+- `make rpm` / `make srpm` require `rpmbuild` and produce RPM/SRPM into `build/rpmbuild`, including the pkg-config file.
+- `make deb` produces a binary `.deb`; `make sdeb` produces a source `.deb`; requires `dpkg-deb`; binary packages now include `libmempool.pc` in `/usr/local/lib/pkgconfig`.
 - `make dist` creates a source tarball under `build/dist`.

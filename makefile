@@ -41,7 +41,9 @@ $(BINARY): $(LIBRARY) pool_test.o
 	$(CC) -c $(CCOPTS) $< $(INCS)
 
 install: $(LIBRARY)
-	install -d $(DESTDIR)/usr/local/lib $(DESTDIR)/usr/local/include
+	install -d $(DESTDIR)/usr/local/lib
+	install -d $(DESTDIR)/usr/local/include
+	install -d $(DESTDIR)/usr/local/lib/pkgconfig
 	install -m 0755 $(LIBRARY) $(DESTDIR)/usr/local/lib/$(LIBRARY)
 	install -m 0644 libmempool.h $(DESTDIR)/usr/local/include/libmempool.h
 	sed "s/@VERSION@/$(VERSION)/" libmempool.pc.in > $(DESTDIR)/usr/local/lib/pkgconfig/libmempool.pc
@@ -78,8 +80,10 @@ deb: all
 	@mkdir -p $(DEBROOT)/$(NAME)_$(VERSION)_$(ARCH)/DEBIAN
 	@mkdir -p $(DEBROOT)/$(NAME)_$(VERSION)_$(ARCH)/usr/local/lib
 	@mkdir -p $(DEBROOT)/$(NAME)_$(VERSION)_$(ARCH)/usr/local/include
+	@mkdir -p $(DEBROOT)/$(NAME)_$(VERSION)_$(ARCH)/usr/local/lib/pkgconfig
 	@cp $(LIBRARY) $(DEBROOT)/$(NAME)_$(VERSION)_$(ARCH)/usr/local/lib/
 	@cp libmempool.h $(DEBROOT)/$(NAME)_$(VERSION)_$(ARCH)/usr/local/include/
+	@sed "s/@VERSION@/$(VERSION)/" libmempool.pc.in > $(DEBROOT)/$(NAME)_$(VERSION)_$(ARCH)/usr/local/lib/pkgconfig/libmempool.pc
 	@printf "Package: $(NAME)\nVersion: $(VERSION)\nSection: libs\nPriority: optional\nArchitecture: $(ARCH)\nMaintainer: $(MAINTAINER)\nDescription: Minimal memory pool allocator\n" > $(DEBROOT)/$(NAME)_$(VERSION)_$(ARCH)/DEBIAN/control
 	@dpkg-deb --build $(DEBROOT)/$(NAME)_$(VERSION)_$(ARCH)
 

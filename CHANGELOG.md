@@ -4,6 +4,7 @@
 - Renamed sources to `libmempool.c`/`libmempool.h` to align with the shared library.
 - Added packaging targets for RPM, SRPM, binary `.deb`, source `.deb`, and source tarball; new `make install` installs library/header.
 - Bumped version to 0.0.3.
+- Packaging now ships a versioned `libmempool.pc` in both RPM and `.deb` builds and creates the pkg-config path during `make install`.
 
 ## 0.0.2
 - Added guard regions with runtime enable/disable; disabling is rejected while allocations are outstanding and tests cover the guard toggle scenarios.
