@@ -30,3 +30,4 @@ void * pool_alloc(MemoryPool *, size_t );
 void pool_free(MemoryPool *, void *);
 void pool_destroy(MemoryPool *);
 void pool_dump(MemoryPool *);
+const char * pool_version(void);

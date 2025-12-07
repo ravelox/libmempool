@@ -15,3 +15,5 @@ A minimal memory pool allocator with separate free/used block lists and a small 
 ## Notes
 - Block metadata comes from a preallocated slab to avoid per-split `malloc`/`free` overhead; a fallback allocation is used only if the slab is exhausted.
 - Free list insertions keep blocks sorted by address and coalesce adjacent blocks immediately, keeping traversal costs low.
+- Built as a shared library (`libmempool.dylib` on macOS, `libmempool.so` on Linux) and linked by `pool_test` with an rpath to its directory.
+- Library version string: `pool_version()` currently returns `0.0.1`.

@@ -449,7 +449,7 @@ pool_dump(MemoryPool *pool)
 	fprintf(stderr, "Used Blocks [%p]\n", pool->used_blocks);
 	LOGF("Used block chain:\n");
 	pool_dump_block(pool->used_blocks);
-	fprintf(stderr, "-----------\n");
+		fprintf(stderr, "-----------\n");
 
 	/* Dump the raw pool in 64-character lines */
 	if(pool->allocated && pool->size)
@@ -466,4 +466,11 @@ pool_dump(MemoryPool *pool)
 		}
 		fprintf(stderr, "-----------\n");
 	}
+
+}
+
+const char *
+pool_version(void)
+{
+	return "0.0.1";
 }
