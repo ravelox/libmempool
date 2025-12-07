@@ -19,6 +19,10 @@ typedef struct _pool_t {
 	size_t num_free_blocks, num_used_blocks;
 	MemoryBlock *free_blocks;
 	MemoryBlock *used_blocks;
+	MemoryBlock *block_slab;
+	MemoryBlock *block_free_list;
+	size_t block_capacity;
+	size_t block_used;
 } MemoryPool;
 
 MemoryPool * pool_create(size_t );
