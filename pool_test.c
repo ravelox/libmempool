@@ -72,4 +72,90 @@ main(int argc, char *argv[])
 
 	fprintf(stdout, "===> DESTROY POOL\n");
 	pool_destroy(pool);
+
+	/* Fragmentation scenario: plenty of total free bytes, no contiguous 150-byte block */
+	fprintf(stdout, "===> FRAGMENTATION TEST\n");
+	pool = pool_create(1000);
+	void *frag1 = pool_alloc(pool, 120);
+	void *frag2 = pool_alloc(pool, 120);
+	void *frag3 = pool_alloc(pool, 120);
+	void *frag4 = pool_alloc(pool, 120);
+	void *frag5 = pool_alloc(pool, 120);
+	void *frag6 = pool_alloc(pool, 200);
+	void *frag7 = pool_alloc(pool, 200); /* consume tail space so no large contiguous free region remains */
+	memset(frag1, 'A', 120);
+	memset(frag2, 'B', 120);
+	memset(frag3, 'C', 120);
+	memset(frag4, 'D', 120);
+	memset(frag5, 'E', 120);
+	memset(frag6, 'F', 200);
+	memset(frag7, 'G', 200);
+	pool_dump(pool);
+
+	fprintf(stdout, "===> FREE alternating small blocks to fragment\n");
+	pool_free(pool, frag1);
+	pool_free(pool, frag3);
+	pool_free(pool, frag5);
+	pool_dump(pool);
+
+	fprintf(stdout, "===> ALLOC 150 bytes (should fail: no contiguous 150-byte block)\n");
+	void *frag_fail = pool_alloc(pool, 150);
+	if(frag_fail)
+	{
+		fprintf(stdout, "ERROR: fragmented allocation unexpectedly succeeded\n");
+	} else {
+		fprintf(stdout, "Fragmented allocation correctly failed despite sufficient total free space\n");
+	}
+	pool_dump(pool);
+
+	fprintf(stdout, "===> CLEANUP FRAGMENTATION TEST\n");
+	pool_free(pool, frag2);
+	pool_free(pool, frag4);
+	pool_free(pool, frag6);
+	pool_free(pool, frag7);
+	pool_dump(pool);
+	pool_destroy(pool);
+
+	/* Guard enable/disable tests */
+	fprintf(stdout, "===> GUARD TEST: ENABLE\n");
+	pool = pool_create(256);
+	pool_enable_guards(pool, 8);
+	void *g1 = pool_alloc(pool, 32);
+	memset(g1, 'X', 32);
+	pool_dump(pool);
+	pool_free(pool, g1);
+	pool_dump(pool);
+
+	fprintf(stdout, "===> GUARD TEST: DISABLE (should succeed with no outstanding blocks)\n");
+	if(pool_disable_guards(pool))
+	{
+		fprintf(stdout, "Guards disabled as expected\n");
+	} else {
+		fprintf(stdout, "ERROR: guards failed to disable with no outstanding blocks\n");
+	}
+	void *g2 = pool_alloc(pool, 32);
+	memset(g2, 'Y', 32);
+	pool_dump(pool);
+
+	fprintf(stdout, "===> GUARD TEST: DISABLE WITH OUTSTANDING (should fail)\n");
+	void *g3 = pool_alloc(pool, 16);
+	memset(g3, 'Z', 16);
+	if(pool_disable_guards(pool))
+	{
+		fprintf(stdout, "ERROR: guards disabled while allocations outstanding\n");
+	} else {
+		fprintf(stdout, "Guards correctly remained enabled with outstanding blocks\n");
+	}
+	pool_dump(pool);
+
+	pool_free(pool, g2);
+	pool_free(pool, g3);
+	fprintf(stdout, "===> GUARD TEST: DISABLE AFTER FREE (should now succeed)\n");
+	if(pool_disable_guards(pool))
+	{
+		fprintf(stdout, "Guards disabled after freeing outstanding blocks\n");
+	} else {
+		fprintf(stdout, "ERROR: guards still enabled after freeing outstanding blocks\n");
+	}
+	pool_destroy(pool);
 }

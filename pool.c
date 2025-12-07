@@ -8,11 +8,16 @@
 #define POOL_DEBUG 0
 #endif
 
+#define POOL_GUARD_DEFAULT_SIZE 16
+#define POOL_GUARD_BYTE 0xAB
+
 #define LOGF(...) do { if(POOL_DEBUG) fprintf(stderr, __VA_ARGS__); } while(0)
 
 static void pool_dump_block(MemoryBlock *);
 static MemoryBlock * pool_block_acquire(MemoryPool *pool);
 static void pool_block_release(MemoryPool *pool, MemoryBlock *block);
+static void pool_write_guards(MemoryPool *pool, MemoryBlock *block);
+static int pool_check_guards(MemoryPool *pool, MemoryBlock *block);
 static size_t pool_calc_block_capacity(size_t size)
 {
 	size_t capacity = size / 32; /* heuristic: one block header per 32 bytes of payload */
@@ -127,6 +132,14 @@ pool_insert_block_sorted(MemoryBlock **head, MemoryBlock *block)
 	return block;
 }
 
+static void *
+pool_block_user_begin(MemoryPool *pool, MemoryBlock *block)
+{
+	if(! block) return NULL;
+	if(pool && pool->guard_enabled) return (char *)block->begin + pool->guard_size;
+	return block->begin;
+}
+
 static void
 pool_add_free_block(MemoryPool *pool, MemoryBlock *block)
 {
@@ -169,6 +182,9 @@ pool_add_free_block(MemoryPool *pool, MemoryBlock *block)
 		pool_block_release(pool, next);
 		pool->num_free_blocks--;
 	}
+
+	/* free-list blocks don't track payload */
+	block->payload_size = 0;
 }
 
 static void
@@ -228,18 +244,18 @@ pool_delete_used_block(MemoryPool *pool, MemoryBlock *block)
 		pool->num_used_blocks--;
 	}
 
-	pool->remaining += block->size;
+	pool->remaining += block->payload_size;
 }
 
 static MemoryBlock *
 pool_find_block_by_pointer(MemoryPool *pool, MemoryBlock *block, void *pointer)
 {
-	(void)pool;
 	if(! pointer) return NULL;
 
 	while (block)
 	{
-		if(block->begin == pointer) return block;
+		void *user_ptr = pool_block_user_begin(pool, block);
+		if(user_ptr == pointer) return block;
 		block = block->next;
 	}
 
@@ -290,6 +306,8 @@ pool_create(size_t size)
 	pool->block_used = 0;
 	pool->block_free_list = NULL;
 	pool->block_slab = (MemoryBlock *)malloc(sizeof(MemoryBlock) * pool->block_capacity);
+	pool->guard_enabled = 0;
+	pool->guard_size = 0;
 	if(! pool->block_slab)
 	{
 		free(pool->allocated);
@@ -308,6 +326,7 @@ pool_create(size_t size)
 	}
 	
 	initial->size = size;
+	initial->payload_size = 0;
 	initial->prev = NULL;
 	initial->next = NULL;
 	initial->begin = pool->allocated;
@@ -366,6 +385,7 @@ pool_split_block(MemoryPool *pool, MemoryBlock *block, size_t size)
 	split->end = (char *)block->end + split->size;
 	split->prev = block;
 	split->next = block->next;
+	split->payload_size = 0;
 	block->next = split;
 	if(split->next) split->next->prev = split;
 
@@ -390,28 +410,38 @@ void *
 pool_alloc(MemoryPool *pool, size_t size)
 {
 	MemoryBlock *block;
+	size_t guard_overhead = 0;
 	if(! pool) return NULL;
-	if(size > pool->remaining) return NULL;
+	if(pool->guard_enabled) guard_overhead = pool->guard_size * 2;
+	if(size + guard_overhead > pool->remaining) return NULL;
 
 	LOGF("pool_alloc: Requested=%zu\n", size);
-	block = pool_get_free_block(pool, pool->free_blocks, size);
+	block = pool_get_free_block(pool, pool->free_blocks, size + guard_overhead);
 
 	if(! block) return NULL;
 
-	if(block->size > size)
+	if(block->size > size + guard_overhead)
 	{
-		block = pool_split_block(pool, block, size);
+		block = pool_split_block(pool, block, size + guard_overhead);
 		if(block) pool->num_free_blocks++;
 	}
 	
 	pool->remaining -= size;
 
-	memset(block->begin, '0', size);
+	block->payload_size = size;
+
+	/* initialize guards and payload */
+	if(pool->guard_enabled)
+	{
+		pool_write_guards(pool, block);
+	}
+
+	memset(pool_block_user_begin(pool, block), '0', size);
 
 	pool_delete_free_block(pool, block);
 	pool_add_used_block(pool, block);
 
-	return block->begin;
+	return pool_block_user_begin(pool, block);
 }
 
 void
@@ -423,7 +453,12 @@ pool_free(MemoryPool *pool, void *pointer)
 
 	if(! block) return;
 
-	memset(block->begin, '.', block->size);
+	if(pool->guard_enabled && !pool_check_guards(pool, block))
+	{
+		fprintf(stderr, "pool_free: guard region corrupted for block %p\n", pointer);
+	}
+
+	memset(pool_block_user_begin(pool, block), '.', block->payload_size);
 
 	pool_delete_used_block(pool, block);
 	pool_add_free_block(pool, block);
@@ -472,5 +507,53 @@ pool_dump(MemoryPool *pool)
 const char *
 pool_version(void)
 {
-	return "0.0.1";
+	return "0.0.2";
+}
+
+void
+pool_enable_guards(MemoryPool *pool, size_t guard_size)
+{
+	if(! pool) return;
+	if(guard_size == 0) guard_size = POOL_GUARD_DEFAULT_SIZE;
+	pool->guard_enabled = 1;
+	pool->guard_size = guard_size;
+}
+
+int
+pool_disable_guards(MemoryPool *pool)
+{
+	if(! pool) return 0;
+	if(pool->num_used_blocks > 0) return 0;
+	pool->guard_enabled = 0;
+	pool->guard_size = 0;
+	return 1;
+}
+
+static void
+pool_write_guards(MemoryPool *pool, MemoryBlock *block)
+{
+	size_t guard;
+	if(! pool || ! block) return;
+	if(! pool->guard_enabled) return;
+	guard = pool->guard_size;
+	memset(block->begin, POOL_GUARD_BYTE, guard);
+	memset((char *)pool_block_user_begin(pool, block) + block->payload_size, POOL_GUARD_BYTE, guard);
+}
+
+static int
+pool_check_guards(MemoryPool *pool, MemoryBlock *block)
+{
+	size_t guard, i;
+	char *start, *end;
+	if(! pool || ! block) return 1;
+	if(! pool->guard_enabled) return 1;
+	guard = pool->guard_size;
+	start = (char *)block->begin;
+	end = (char *)pool_block_user_begin(pool, block) + block->payload_size;
+	for(i = 0; i < guard; ++i)
+	{
+		if((unsigned char)start[i] != POOL_GUARD_BYTE) return 0;
+		if((unsigned char)end[i] != POOL_GUARD_BYTE) return 0;
+	}
+	return 1;
 }
