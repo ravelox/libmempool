@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "mempool.h"
 
@@ -32,6 +33,16 @@ main(int argc, char *argv[])
 	fprintf(stdout, "===> ALLOC 400 bytes \n");
 	ptr4 = pool_alloc(pool, 400);
 	memset(ptr4, '4', 400);
+	pool_dump(pool);
+
+	fprintf(stdout, "===> OVER-ALLOC 2000 bytes (expect NULL)\n");
+	void *ptr_fail = pool_alloc(pool, 2000);
+	if(ptr_fail)
+	{
+		fprintf(stdout, "ERROR: over-allocation unexpectedly succeeded\n");
+	} else {
+		fprintf(stdout, "Over-allocation correctly failed\n");
+	}
 	pool_dump(pool);
 
 	fprintf(stdout, "===> FREE PTR4 400 bytes \n");
