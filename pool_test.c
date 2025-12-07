@@ -121,6 +121,41 @@ main(int argc, char *argv[])
 	pool_dump(pool);
 	pool_destroy(pool);
 
+	/* Coalescing test: adjacent frees should merge into a larger block */
+	fprintf(stdout, "===> COALESCE TEST\n");
+	pool = pool_create(512);
+	void *c1 = pool_alloc(pool, 100);
+	void *c2 = pool_alloc(pool, 100);
+	void *c3 = pool_alloc(pool, 100);
+	memset(c1, 'a', 100);
+	memset(c2, 'b', 100);
+	memset(c3, 'c', 100);
+	pool_dump(pool);
+
+	fprintf(stdout, "===> FREE two adjacent blocks to merge\n");
+	pool_free(pool, c2);
+	pool_free(pool, c1);
+	pool_dump(pool);
+
+	fprintf(stdout, "===> ALLOC 180 bytes (should succeed after coalescing)\n");
+	void *c_large = pool_alloc(pool, 180);
+	if(c_large)
+	{
+		memset(c_large, 'M', 180);
+		fprintf(stdout, "Coalesced allocation succeeded\n");
+	} else {
+		fprintf(stdout, "ERROR: coalesced allocation failed\n");
+	}
+	pool_dump(pool);
+
+	pool_free(pool, c3);
+	if(c_large)
+	{
+		pool_free(pool, c_large);
+	}
+	pool_dump(pool);
+	pool_destroy(pool);
+
 	/* Guard enable/disable tests */
 	fprintf(stdout, "===> GUARD TEST: ENABLE\n");
 	pool = pool_create(256);
