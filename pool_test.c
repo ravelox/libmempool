@@ -148,6 +148,7 @@ main(int argc, char *argv[])
 	}
 	pool_dump(pool);
 
+	fprintf(stdout, "===> CLEANUP COALESCE TEST\n");
 	pool_free(pool, c3);
 	if(c_large)
 	{
@@ -163,6 +164,8 @@ main(int argc, char *argv[])
 	void *g1 = pool_alloc(pool, 32);
 	memset(g1, 'X', 32);
 	pool_dump(pool);
+
+	fprintf(stdout, "===> GUARD TEST: FREE ALLOCATION WITH GUARDS\n");
 	pool_free(pool, g1);
 	pool_dump(pool);
 
@@ -188,14 +191,15 @@ main(int argc, char *argv[])
 	}
 	pool_dump(pool);
 
+	fprintf(stdout, "===> GUARD TEST: DISABLE AFTER FREE (should now succeed)\n");
 	pool_free(pool, g2);
 	pool_free(pool, g3);
-	fprintf(stdout, "===> GUARD TEST: DISABLE AFTER FREE (should now succeed)\n");
 	if(pool_disable_guards(pool))
 	{
 		fprintf(stdout, "Guards disabled after freeing outstanding blocks\n");
 	} else {
 		fprintf(stdout, "ERROR: guards still enabled after freeing outstanding blocks\n");
 	}
+	pool_dump(pool);
 	pool_destroy(pool);
 }
