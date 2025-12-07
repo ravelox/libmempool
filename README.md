@@ -5,10 +5,10 @@ A minimal memory pool allocator with separate free/used block lists and a small 
 ## Building
 - Requirements: `gcc`/`clang`, `make`.
 - Run `make` to build `pool_test`.
-- Clean artifacts with `make clean` (if present) or manually remove `pool.o`/`pool_test.o`.
+- Clean artifacts with `make clean` (if present) or manually remove `libmempool.o`/`pool_test.o`.
 
 ## Usage
-- See `pool_test.c` for an example: create a pool with `pool_create(size)`, call `pool_alloc`/`pool_free`, then `pool_destroy`.
+- Include `libmempool.h` and see `pool_test.c` for an example: create a pool with `pool_create(size)`, call `pool_alloc`/`pool_free`, then `pool_destroy`.
 - `pool_dump(pool)` prints allocator stats plus a 64-character-per-line view of the raw pool contents.
 - To enable verbose internal logging, compile with `-DPOOL_DEBUG=1`.
 - **API summary**
@@ -26,4 +26,10 @@ A minimal memory pool allocator with separate free/used block lists and a small 
 - Free list insertions keep blocks sorted by address and coalesce adjacent blocks immediately, keeping traversal costs low.
 - Built as a shared library (`libmempool.dylib` on macOS, `libmempool.so` on Linux) and linked by `pool_test` with an rpath to its directory.
 - Guard regions can be enabled at runtime with `pool_enable_guards(pool, guard_size)`; disabling is only allowed when no allocations are outstanding.
-- Library version string: `pool_version()` currently returns `0.0.2`.
+- Library version string: `pool_version()` currently returns `0.0.3`.
+
+## Packaging
+- Shared library build produces `libmempool.{so|dylib}` and installs `libmempool.h`.
+- `make rpm` / `make srpm` require `rpmbuild` and produce RPM/SRPM into `build/rpmbuild`.
+- `make deb` produces a binary `.deb`; `make sdeb` produces a source `.deb`; requires `dpkg-deb`.
+- `make dist` creates a source tarball under `build/dist`.

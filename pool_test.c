@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "mempool.h"
+#include "libmempool.h"
 
 int
 main(int argc, char *argv[])

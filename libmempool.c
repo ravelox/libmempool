@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "mempool.h"
+#include "libmempool.h"
 
 #ifndef POOL_DEBUG
 #define POOL_DEBUG 0
@@ -507,7 +507,7 @@ pool_dump(MemoryPool *pool)
 const char *
 pool_version(void)
 {
-	return "0.0.2";
+	return "0.0.3";
 }
 
 void
