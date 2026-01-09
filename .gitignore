@@ -3,3 +3,7 @@
 pool_test
 *.so
 *.pc
+build/
+*.deb
+*.rpm
+*.tar.gz

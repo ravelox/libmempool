@@ -96,3 +96,5 @@ sdeb: dist
 
 clean:
 	rm -f $(BINARY) $(OBJ) $(LIBRARY)
+	rm -f $(DEBROOT)/*.deb
+	rm -f $(RPMTOP)/RPMS/*/*.rpm $(RPMTOP)/SRPMS/*.rpm
